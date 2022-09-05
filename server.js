@@ -47,12 +47,12 @@ app.get('/', function(req, res) {
     res.render('index.ejs');
 });
 
-app.get('/write', function(req, res) {
+app.get('/write', loginCheck, function(req, res) {
     // res.sendFile(__dirname + '/write.html');
     res.render('write.ejs')
 });
 
-app.post('/add', function(req, res) {
+app.post('/add', loginCheck, function(req, res) {
     
 
     db.collection('counter').findOne({name : 'totalNumber'}, function(error, result) {// counter 라는 collection에 있는 db정보 중 name 이 totalNumber 인 데이터를 가져온다
@@ -78,7 +78,7 @@ app.post('/add', function(req, res) {
    
 });
 
-app.get('/list', function(req, res) {
+app.get('/list', loginCheck, function(req, res) {
 
     db.collection('post').find().toArray(function(error, result) { // db에 저장된 post 라는 collection안의 모든 데이터를 꺼내기
         if (error) {return console.error}
@@ -97,7 +97,7 @@ app.delete('/delete', function(req, res) {
     });
 });
 
-app.get('/detail/:id', function(req, res) {
+app.get('/detail/:id', loginCheck, function(req, res) {
     db.collection('post').findOne({_id : parseInt(req.params.id)}, function(error, result) { // 파라미터로 넘어오면서 문자로 치환됨. 정수로 바꿔야함
         if (error) {return console.log(error)}
         console.log(result);
@@ -109,7 +109,7 @@ app.get('/detail/:id', function(req, res) {
     
 });
 
-app.get('/edit/:id', function(req, res) {
+app.get('/edit/:id', loginCheck, function(req, res) {
     db.collection('post').findOne({_id : parseInt(req.params.id)}, function(error, result) {
         if (error) {return console.log(error)}
         console.log(result);
@@ -121,7 +121,7 @@ app.get('/edit/:id', function(req, res) {
     
 });
 
-app.put('/edit', function(req, res) { // _id를 url의 파라미터에 넣어서 전송받아도 됨
+app.put('/edit', loginCheck, function(req, res) { // _id를 url의 파라미터에 넣어서 전송받아도 됨
     db.collection('post').updateOne({_id : parseInt(req.body._id)}, {$set : {title : req.body.title, date : req.body.date}}, function(error, result){
         if (error) {return console.log(error)}
         console.log('수정완료');
@@ -129,8 +129,8 @@ app.put('/edit', function(req, res) { // _id를 url의 파라미터에 넣어서
     });
 });
 
-app.get('/login', function(req, res){
-    res.render('login.ejs');
+app.get('/login', loginCheck, function(req, res){
+    res.render('index.ejs');
 });
 
 app.post('/login', passport.authenticate('local', {
@@ -139,7 +139,16 @@ app.post('/login', passport.authenticate('local', {
     res.redirect('/');
 });
 
-app.get('/mypage', loginCheck() /* 미들웨어 */, function(req, res) {
+app.get('/logout', loginCheck, function(req, res) {
+    req.session.destroy(function(error, result) {
+        if (error) return console.log(error);
+        res.clearCookie('connect.sid');
+        res.render('login.ejs');
+    });
+    
+})
+
+app.get('/mypage', loginCheck /* 미들웨어 */, function(req, res) {
     console.log(req.user);
     res.render('mypage.ejs', {user : req.user});
 });
@@ -147,9 +156,9 @@ app.get('/mypage', loginCheck() /* 미들웨어 */, function(req, res) {
 //미들웨어 함수 생성
 function loginCheck(req, res, next) { // 로그인 후 세션이 있으면 req.user 가 항상 있음
     if (req.user) {
-        next()
+        next();
     } else {
-        res.send('로그인 후 이용해주세요');
+        res.render('login.ejs');
     }
 }
 
@@ -180,7 +189,7 @@ passport.serializeUser(function(user, done){  // id를 이용해서 세션을 �
 
 //위의 user.id 와 밑의 id 는 동일함
 passport.deserializeUser(function(id, done) { //마이페이지 접속시 발동, 로그인한 유저의 세션아이디를 바탕으로 개인정보를 db에서 찾는 역할
-    db.collection('login').fineOne({id : id}, function(error, result) {
+    db.collection('login').findOne({id : id}, function(error, result) {
         if (error) return console.log(error);
         done(null, result); 
     })

@@ -11,6 +11,7 @@ const MongoClient = require('mongodb').MongoClient;
 const passport = require('passport'); // install
 const LocalStrategy = require('passport-local').Strategy;//install
 const session = require('express-session');//install
+require('dotenv').config();
 app.use(session({secret : 'secretCode', resave : true, saveUninitialized : false}));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -19,7 +20,7 @@ app.use(passport.session());
 
 
 var db;
-MongoClient.connect('mongodb+srv://kgj:aa8525698**@cluster0.3ldg4pr.mongodb.net/?retryWrites=true&w=majority', function(error, client) {
+MongoClient.connect(process.env.DB_URL, function(error, client) {
 
     if (error) {return console.log(error)}
 
@@ -27,7 +28,7 @@ MongoClient.connect('mongodb+srv://kgj:aa8525698**@cluster0.3ldg4pr.mongodb.net/
 
     
     app.listen(8080, function() {
-      console.log('listening on 8080');
+      console.log('listening on process.env.PORT');
     });
 });
 

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx"
+            crossorigin="anonymous">
+        <link rel="stylesheet" href="/public/main.css">
+        <script
+            src="https://code.jquery.com/jquery-3.6.1.min.js"
+            integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ="
+            crossorigin="anonymous"></script>
+        <title>Document</title>
+    </head>
+    <body>
+
+       <%- include('nav.html') %>
+   
+
+       
+           
+        
+        <div class="container">
+            <ul class="list-group">
+                <% for (var i = 0; i < posts.length; i++) { %>
+                <li class="list-group-item">
+                    <h4><a href="/detail/<%= posts[i]._id %>">할일 제목 :
+                        <%= posts[i].title %></a></h4>
+                    <p>할일 마감날짜 :
+                        <%= posts[i].date %></p>
+                    
+                    <!-- 데이터 숨긴 채로 넣기 -->
+                    <button class="btn btn-danger delete" data-id="<%= posts[i]._id %>">삭제</button> 
+                    <form action="/edit/<%= posts[i]._id %>" method="GET">
+                        <button class="btn btn-secondary edit" data-id="<%= posts[i]._id %>" type="submit">수정하기</button>
+                    </form>
+                    <%}%>   
+                </li>
+                
+            </ul>
+        </div>
+
+        <!-- 자바스크립트와 서버와 연결. html 에서는 get, post 만 가능. delete, put은 ajax 사용-->
+        <script>
+
+            $('.delete').on('click', function(e){
+                var postNum = e.target.dataset.id; // 내가 누른 요소의 data-id
+                var current = $(this); // 지금 이벤트 동작하는 곳
+                $.ajax({
+                    method : 'DELETE',
+                    url : '/delete',
+                    data : {_id : postNum}
+                }).done(function(result) { //서버에서 200 보내줬기 때문에 무조건 성공
+                    // ajax 성공 시 실행
+                    // 페이지를 강제로 새로고침하기 or 삭제버튼을 누른 <li> 요소를 제거하기 (안보이게)
+                    console.log('성공했습니다.'); // 브라우저 콘솔창
+                    current.parent('li').fadeOut(); // 현재 누른 버튼 태그의 부모요소 중 li 태그 서서히 사라지게
+                }).fail(function(xhr, textStatus, errorThrown) { // 서버가 실패 코드를 응답했을 때
+                    console.log(xhr, textStatus, errorThrown);
+                });
+            });
+
+           
+
+            
+
+        </script>
+
+
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa"
+            crossorigin="anonymous"></script>
+    </body>
+</html>

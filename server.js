@@ -154,6 +154,10 @@ app.get('/mypage', loginCheck /* 미들웨어 */, function(req, res) {
     res.render('mypage.ejs', {user : req.user});
 });
 
+app.get('/fail', function(req, res) {
+    res.redirect('/login');
+})
+
 //미들웨어 함수 생성
 function loginCheck(req, res, next) { // 로그인 후 세션이 있으면 req.user 가 항상 있음
     if (req.user) {

@@ -61,9 +61,11 @@ app.post('/add', loginCheck, function(req, res) {
 
         var totalNumber = result.totalPost; // 0
 
+        var push = {_id : totalNumber + 1, title : req.body.title, date : req.body.date, writer : req.user._id }// 작성자 정보 추가  
+
         /*  console.log(req.body.title); // body 까지만 쓰면 객체가 전달됨
         console.log(req.body.date); */
-        db.collection('post').insertOne({_id : totalNumber + 1, title : req.body.title, date : req.body.date}, function(error, result) {
+        db.collection('post').insertOne(push, function(error, result) {
             console.log('저장완료');
 
             // totalPost + 1
@@ -91,11 +93,20 @@ app.get('/list', loginCheck, function(req, res) {
 app.delete('/delete', function(req, res) {
     console.log(req.body); // 자료 넘어올 때 숫자가 문자로 치환되어 넘어옴
     req.body._id = parseInt(req.body._id);
-    db.collection('post').deleteOne(req.body, function(error, result) {
+
+    var deleteData = {_id : req.body._id, writer : req.user._id} // 자신이 작성한 글만 삭제 가능
+
+    db.collection('post').deleteOne(deleteData, function(error, result) {
         if (error) {return console.log(error)}
-        console.log('삭제완료')
-        res.status(200).send({ message : '성공했습니다.'}); // 요청 성공
-    });
+        console.log(result);
+        if (result.deletedCount == 1) {
+            console.log('삭제완료')
+            res.status(200).send({ message : '성공했습니다.'}); // 요청 성공
+        } else {
+            console.log('삭제 실패');
+            res.status(400).send({ message : '실패했습니다.'}); // 요청 실패
+        }
+    }); 
 });
 
 app.get('/detail/:id', loginCheck, function(req, res) {
@@ -187,6 +198,8 @@ app.get('/search', function(req, res) {
 
 
 
+
+
 //미들웨어 함수 생성
 function loginCheck(req, res, next) { // 로그인 후 세션이 있으면 req.user 가 항상 있음
     if (req.user) {
@@ -228,4 +241,17 @@ passport.deserializeUser(function(id, done) { //마이페이지 접속시 발동
         done(null, result); 
     })
     
+});
+
+
+app.get('/register', function(req, res) {
+    res.render('signUp.ejs');
+});
+
+// 회원기능이 필요하면 passport 세팅하는 부분이 위에 있어야함
+app.post('/register', function(req, res) {
+    db.collection('login').insertOne({id : req.body.id, pw : req.body.pw}, function(error, result) {
+        if (error) return console.log(error)
+        res.redirect('/');
+    });
 });

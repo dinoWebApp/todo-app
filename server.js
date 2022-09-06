@@ -158,6 +158,35 @@ app.get('/fail', function(req, res) {
     res.redirect('/login');
 })
 
+app.get('/search', function(req, res) {
+    var searchCondition = [
+        {
+            $search: {
+                index : 'titleSearch', // 만들었던 search index 이름
+                text : {
+                    query : req.query.value,
+                    path : "title" // 제목 날짜 둘다 검사하고싶으면 ['제목', '날짜]
+                }
+            }
+        },
+        //{ $sort : {_id : 1}}, // id 오름차순으로 정렬
+        //{ $limit : 10} // 상위 10개 까지만 검색
+        //{ $project : {title : 1, _id:0, score: {$meta: "searchScore"}}} //위의 두개 조건 안쓸 때 검색 스코어 순으로 출력 가능 (검색 정확도)
+    ]
+    console.log(req.query);
+    db.collection('post').aggregate(searchCondition).toArray(function(error, result) { //db 에 데이터가 많으면 찾는데 오래걸림. -> indexing(정렬) mongodb index, binary search 사용
+        if (error) return console.log(error);
+        if (!result) {
+            return console.log('일치하는 결과가 없습니다.');
+        } else {
+            res.render('search.ejs', {posts : result});
+        }
+    });
+}); //단어 띄어쓰기하면 or 검색, -붙이고 검색하면 제외가능, ""안에 넣으면 정확한 검색 가능, text index 쓰면 띄어쓰기 단위로 검색(한글이랑 맞지 않음)
+    // 해결책 1. text index 사용하지 않고 검색할 문서의 양을 제한두기 (ex. 날짜) 2.mongodb 내부 search index 사용
+
+
+
 //미들웨어 함수 생성
 function loginCheck(req, res, next) { // 로그인 후 세션이 있으면 req.user 가 항상 있음
     if (req.user) {
@@ -165,7 +194,7 @@ function loginCheck(req, res, next) { // 로그인 후 세션이 있으면 req.u
     } else {
         res.render('login.ejs');
     }
-}
+} 
 
 // 로그인 인증하는 코드
 passport.use(new LocalStrategy({

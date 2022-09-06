@@ -20,6 +20,27 @@
 
        <%- include('nav.html') %>
    
+        <h4 class="ml-2 my-3 text-center">List From Server</h4>
+
+        
+        <div class="container input-group mb-2">
+            <input type="text" class="form-control" id="search-input">
+            <button class="input-group-append btn btn-danger" id="search">Search</button>
+        </div>
+       
+        <script>
+            // Search 클릭하면 GET 요청으로 데이터 보내기
+            $('#search').click(function() {
+                var inputData = $('#search-input').val()
+                window.location.replace('/search?value=' + inputData) //현재 페이지 url 바꾸기, GET 과 같은 역할, query-string
+            })
+
+            /* var data = { name : 'string', name2 : 'string2'};
+            $.param(data);
+
+            $(form-tag).serialize(); */
+        </script>
+
 
        
            

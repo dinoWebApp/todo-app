@@ -16,8 +16,19 @@ app.use(session({secret : 'secretCode', resave : true, saveUninitialized : false
 app.use(passport.initialize());
 app.use(passport.session());
 //app.use(미들웨어) : 요청 - 응답 중간에 뭔가 실행되는 코드
+//multer을 이용한 이미지 하드에 저장하기
 
-
+let multer = require('multer'); //npm install multer
+var storage = multer.diskStorage({
+    destination : function(req, file, cb) {
+        cb(null, './public/image');
+    },
+    filename : function(req, file, cb) { // 저장한 이미지의 파일명 설정하는 부분
+        cb(null, file.originalname);
+    },
+    // 확장자 필터 가능
+});
+var upload = multer({storage : storage}); // 미들웨어로 사용
 
 var db;
 MongoClient.connect(process.env.DB_URL, function(error, client) {
@@ -32,15 +43,49 @@ MongoClient.connect(process.env.DB_URL, function(error, client) {
     });
 });
 
-
 // 서버에서는 무조건 client로 응답을 보내줘야 함
+// app.use('/', require('./routes/member'));
 
-app.get('/path', function(req, res) {
-    res.send('hello');
+// app.use('/', require('./routes/posts'));
+app.get('/login', loginCheck, function(req, res){
+    res.render('index.ejs');
 });
 
-app.get('/beauty', function(req, res) {
-    res.send('beauty');
+app.post('/login', passport.authenticate('local', {
+    failureRedirect : '/fail'
+}) /* 검사 */, function(req, res){
+    res.redirect('/');
+});
+
+app.get('/logout', loginCheck, function(req, res) {
+    req.session.destroy(function(error, result) {
+        if (error) return console.log(error);
+        res.clearCookie('connect.sid');
+        res.render('login.ejs');
+    });
+    
+})
+
+app.get('/mypage', loginCheck /* 미들웨어 */, function(req, res) {
+    console.log(req.user);
+    res.render('mypage.ejs', {user : req.user});
+});
+
+app.get('/fail', function(req, res) {
+    res.redirect('/login');
+})
+
+
+app.get('/register', function(req, res) {
+    res.render('signUp.ejs');
+});
+
+// 회원기능이 필요하면 passport 세팅하는 부분이 위에 있어야함
+app.post('/register', function(req, res) {
+    db.collection('login').insertOne({id : req.body.id, pw : req.body.pw}, function(error, result) {
+        if (error) return console.log(error)
+        res.redirect('/');
+    });
 });
 
 app.get('/', function(req, res) {
@@ -141,33 +186,6 @@ app.put('/edit', loginCheck, function(req, res) { // _id를 url의 파라미터�
     });
 });
 
-app.get('/login', loginCheck, function(req, res){
-    res.render('index.ejs');
-});
-
-app.post('/login', passport.authenticate('local', {
-    failureRedirect : '/fail'
-}) /* 검사 */, function(req, res){
-    res.redirect('/');
-});
-
-app.get('/logout', loginCheck, function(req, res) {
-    req.session.destroy(function(error, result) {
-        if (error) return console.log(error);
-        res.clearCookie('connect.sid');
-        res.render('login.ejs');
-    });
-    
-})
-
-app.get('/mypage', loginCheck /* 미들웨어 */, function(req, res) {
-    console.log(req.user);
-    res.render('mypage.ejs', {user : req.user});
-});
-
-app.get('/fail', function(req, res) {
-    res.redirect('/login');
-})
 
 app.get('/search', function(req, res) {
     var searchCondition = [
@@ -196,6 +214,18 @@ app.get('/search', function(req, res) {
 }); //단어 띄어쓰기하면 or 검색, -붙이고 검색하면 제외가능, ""안에 넣으면 정확한 검색 가능, text index 쓰면 띄어쓰기 단위로 검색(한글이랑 맞지 않음)
     // 해결책 1. text index 사용하지 않고 검색할 문서의 양을 제한두기 (ex. 날짜) 2.mongodb 내부 search index 사용
 
+app.get('/upload', function(req, res) {
+    res.render('upload.ejs');
+});    
+
+app.post('/upload', upload.single(/* input의 name 속성 */'profile'), function(req, res) { //미들웨어로 upload 사용, 여러개 파일 올리려면 upload.array('input name', 10(개수))
+    res.redirect('/image/' + req.file.originalname);
+})
+
+app.get('/image/:uploaded', function(req, res) {
+    res.sendFile(__dirname + '/public/image/' + req.params.uploaded);
+})
+
 
 
 
@@ -208,6 +238,10 @@ function loginCheck(req, res, next) { // 로그인 후 세션이 있으면 req.u
         res.render('login.ejs');
     }
 } 
+
+
+
+
 
 // 로그인 인증하는 코드
 passport.use(new LocalStrategy({
@@ -244,14 +278,5 @@ passport.deserializeUser(function(id, done) { //마이페이지 접속시 발동
 });
 
 
-app.get('/register', function(req, res) {
-    res.render('signUp.ejs');
-});
 
-// 회원기능이 필요하면 passport 세팅하는 부분이 위에 있어야함
-app.post('/register', function(req, res) {
-    db.collection('login').insertOne({id : req.body.id, pw : req.body.pw}, function(error, result) {
-        if (error) return console.log(error)
-        res.redirect('/');
-    });
-});
+

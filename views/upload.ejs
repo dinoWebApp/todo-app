@@ -21,27 +21,14 @@
 
         <%- include('nav.html') %>
 
-        <div class="container mt-3">
-            <form action="/login" method="POST">
-                <div class="form-group">
-                    <label>아이디</label>
-
-                    <!-- POST 요청으로 서버에 데이터 전송하고 싶으면 form 데이터의 경우 input들에 name 쓰기 -->
-                    <input type="text" class="form-control" name="id">
-                </div>
-                <div class="form-group">
-                    <label>패스워드</label>
-                    <input type="password" class="form-control" name="pw">
-                </div>
-                <button type="submit" class="btn btn-outline-secondary">로그인</button>
+        <div class="container mt-4">
+            <h4 class="text-center mb-3">업로드 페이지</h4>
+            <!-- 인코딩 타입은 보통 밑에 적혀있는 걸로 함 -->
+            <form action="/upload" method="POST" enctype="multipart/form-data">
+                <input type="file" name="profile">
+                <button type="submit">upload</button>
             </form>
-            <form action="/register" method="GET">
-                <button type="submit" class="btn btn-danger">Sign Up</button>
-            </form>
-            
         </div>
-
-        
 
 
        

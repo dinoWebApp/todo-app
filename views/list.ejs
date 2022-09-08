@@ -55,10 +55,12 @@
                         <%= posts[i].date %></p>
                     
                     <!-- 데이터 숨긴 채로 넣기 -->
-                    <button class="btn btn-danger delete" data-id="<%= posts[i]._id %>">삭제</button> 
+                    <button class="btn btn-danger delete" data-id="<%= posts[i]._id %>">삭제</button>
+                    <button class="btn btn-secondary chat" data-id="<%= posts[i].writer %>">채팅</button>
                     <form action="/edit/<%= posts[i]._id %>" method="GET">
                         <button class="btn btn-secondary edit" data-id="<%= posts[i]._id %>" type="submit">수정하기</button>
                     </form>
+                    
                     <%}%>   
                 </li>
                 
@@ -83,6 +85,13 @@
                 }).fail(function(xhr, textStatus, errorThrown) { // 서버가 실패 코드를 응답했을 때
                     console.log(xhr, textStatus, errorThrown);
                 });
+            });
+
+            $('.chat').click(function(e) {
+                var id = e.target.dataset.id;
+                $.post('/chatroom', {receiveId : id}).then(()=> {
+                    console.log(success);
+                })
             });
 
            

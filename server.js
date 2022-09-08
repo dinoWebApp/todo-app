@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 // 서버에 데이터 전송을 위한 코드
 const bodyParser = require('body-parser');
+const {ObjectId} = require('mongodb');
 app.use(bodyParser.urlencoded({extended : true}));
 const methodOverride = require('method-override'); // npm install method-override, put, delete 사용위함
 app.use(methodOverride('_method'));
@@ -225,6 +226,33 @@ app.post('/upload', upload.single(/* input의 name 속성 */'profile'), function
 app.get('/image/:uploaded', function(req, res) {
     res.sendFile(__dirname + '/public/image/' + req.params.uploaded);
 })
+
+
+app.post('/chatroom', loginCheck, function(req, res) {
+    var save = {
+        title : '채팅방 이름',
+        member : [ObjectId(req.body.receiveId), req.user._id],
+        date : new Date()
+    }
+    db.collection('chatroom').insertOne(save).then((result) =>{
+       
+        res.redirect()
+        console.log(result);
+    }); // 콜백함수 function 대신에 이렇게 써도 됨
+
+    
+});
+
+
+app.get('/chat', function(req, res) {
+    db.collection('chatroom').find({member : req.user._id}).toArray().then((result) =>{
+        res.render('chat.ejs', {data : result})
+    }); 
+    
+});
+
+
+
 
 
 

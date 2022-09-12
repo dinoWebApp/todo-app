@@ -45,8 +45,8 @@
                 <ul class="list-group chat-list">
 
                     <% for (var i = 0; i < data.length; i++) { %>
-                    <li class="list-group-item" data-id="">
-                        <h6><%= data[i].title %></h6>
+                    <li class="list-group-item" data-id="<%= data[i]._id %>">
+                        <h6><%= data[i].title %><%= data[i]._id %></h6>
                         <h6 class="text-small"><%= data[i].member[0] %></h6>
                     </li>
 
@@ -57,15 +57,7 @@
             <div class="col-9 p-0">
                 <div class="chat-room">
                     <ul class="list-group chat-content">
-                        <li>
-                            <span class="chat-box">채팅방1 내용</span>
-                        </li>
-                        <li>
-                            <span class="chat-box">채팅방1 내용</span>
-                        </li>
-                        <li>
-                            <span class="chat-box mine">채팅방1 내용</span>
-                        </li>
+                       
                     </ul>
                     <div class="input-group">
                         <input class="form-control" id="chat-input">
@@ -76,6 +68,41 @@
         </div>
 
     </div>
+    <script>
+        var currentChatRoomId;
+        var eventSource;
+        $('.list-group-item').click(function() {
+            console.log(this.dataset.id);
+            currentChatRoomId = this.dataset.id;
+            $('.chat-content').html(''); // 채팅방 목록 눌러줄 때 마다 html 초기화하고 새로 update
+            if(eventSource != undefined) {// 채팅 목록 눌렀을 때 eventSource 에 어떤 데이터가 담겨 있으면 eventSource 닫기
+                eventSource.close(); 
+            }
+            eventSource = new EventSource('/message/' + currentChatRoomId); //실시간 데이터 수신, Get 요청
+            eventSource.addEventListener('test', function(e) {
+                console.log(JSON.parse(e.data));
+                var receiveData = JSON.parse(e.data); //서버에서 보낸 실시간 데이터, 서버에서 보낸 문자형태 다시 파싱
+                receiveData.forEach(function(i){
+                    $('.chat-content').append('<li><span class="chat-box">' + i.content + '</span><li>') //array 안에 있던 하나하나의 i객체 안의 content 가 새로운 li 태그에 입력됨
+                })
+            });
+        });
+
+
+        $('#send').click(function(){
+            var sendValue = $('#chat-input').val();
+            var sendData = {
+                parent : currentChatRoomId,
+                content : sendValue
+    
+            }
+            console.log(sendData);
+            $.post('/message', sendData).then(()=>{
+                console.log('전송성공');
+            });
+
+        }); 
+    </script>
 
         
 

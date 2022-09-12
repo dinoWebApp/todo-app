@@ -1,6 +1,10 @@
 const express = require('express');
 const app = express();
 // 서버에 데이터 전송을 위한 코드
+const http = require('http').createServer(app); // socket.io 셋팅
+const {Server} = require('socket.io');
+const io = new Server(http); // const app = express() 밑에만 사용하면 됨. npm install socket.io
+
 const bodyParser = require('body-parser');
 const {ObjectId} = require('mongodb');
 app.use(bodyParser.urlencoded({extended : true}));
@@ -37,9 +41,10 @@ MongoClient.connect(process.env.DB_URL, function(error, client) {
     if (error) {return console.log(error)}
 
     db = client.db('todoapp');
+    app.db = db;
 
     
-    app.listen(8080, function() {
+    http.listen(8080, function() { //socket.io 사용할 경우 app.listen 대신 http.listen 사용
       console.log('listening on process.env.PORT');
     });
 });
@@ -236,7 +241,7 @@ app.post('/chatroom', loginCheck, function(req, res) {
     }
     db.collection('chatroom').insertOne(save).then((result) =>{
        
-        res.redirect()
+        res.redirect('/chat');
         console.log(result);
     }); // 콜백함수 function 대신에 이렇게 써도 됨
 
@@ -251,6 +256,61 @@ app.get('/chat', function(req, res) {
     
 });
 
+app.post('/message', function(req, res) {
+    var save = {
+        parent : req.body.parent,
+        content : req.body.content,
+        userId : req.user._id,
+        date : new Date()
+    }
+
+    db.collection('message').insertOne(save).then(()=> {
+        console.log('db저장 성공');
+        res.send('db저장 성공');
+    }).catch(()=> {
+        console.log('db 저장 실패');
+    });
+});
+
+app.get('/message/:id', loginCheck, function(req, res) { // 서버와 유저간 실시간 소통채널 열기
+    res.writeHead(200, { // 이 코드 덕분에 응답을 여러번 보낼 수 있음
+        "Connection" : "keep-alive",
+        "Content-Type" : "text/event-stream",
+        "Cache-Control" : "no-cache",
+     });
+
+     /* res.write('event: test\n');
+     res.write('data: 안녕하세요\n\n'); */
+
+     db.collection('message').find({ parent : req.params.id}).toArray().then((result) =>{
+        res.write('event: test\n'); // 보낼 데이터 이름 //event: 띄어쓰기 항상 확인
+        res.write('data: ' + JSON.stringify(result) + '\n\n'); // 보낼 데이터 (문자 형태로만 전송 가능)
+     });
+
+     const pipeline = [  // db가 업데이트 -> 서버에게 알려줌 -> 유저에게 전달, mongodb language (Change Stream), 암기
+        {$match: {'fullDocument.parent' : req.params.id} } //fullDocument  꼭 붙여야함
+     ];
+     const collection = db.collection('message');
+     const changeStream = collection.watch(pipeline); // .watch() 붙이면 실시간 감시함
+     changeStream.on('change', (result) => { //db에 변동사항이 생기면 밑 함수 실행
+        console.log(result.fullDocument);
+        res.write('event: test\n'); // event: 띄어쓰기 항상 확인
+        res.write('data: ' + JSON.stringify([result.fullDocument]) + '\n\n'); // array 로 전송, 위 어레이 전송 코드와 규격 통일
+     });
+     
+});
+
+app.get('/socket', function(req, res) {
+    res.render('socket.ejs');
+});
+
+io.on('connection', function(socket) { //웹소켓에 접속시 서버가 실행하는 것
+    console.log('유저 접속함');
+
+    socket.on('user-send', function(data) { //누가 user-send 이름으로 메세지 보내면 내부 코드 실행
+        console.log(data); //유저가 보낸 메세지
+    })
+});
 
 
 
